@@ -1,40 +1,12 @@
 import { Request, Response } from 'express';
-import fs from 'fs';
-import path from 'path';
-import crypto from 'crypto';
 import { Form, FormDocument } from '../models/form.model';
 
-// // import { waterfall } from 'asy'
-// var debug = require('debug')('Guitou'),
-//     mongoose = require('mongoose'),
-//     fs = require('fs'),
-//     path = require('path'),
-//     crypto = require('crypto');
-const { waterfall } = require('async'); //.waterfall;
-
-const { exec, execFile, spawn } = require('child_process');
-
-// var Form = mongoose.model('Form'),
-
-//     fsUtil = require('../helpers/fs.util'),
-
-//     token = require('../../users/controllers/users.token.controller');
-
-
-var hashPassword = function (salt, password) {
-  if (salt && password) {
-    return crypto.pbkdf2Sync(password, new Buffer(salt, 'base64'), 10000, 64, 'sha1').toString('base64');
-  } else {
-    return password;
-  }
-};
-
-
 const save = async (req: Request, res: Response) => {
-  let success = true;
   let body = req.body;
+  const { xormId } = req.params;
 
   let xorm = new Form(body);
+  xorm.xorm = xormId;
   
   try {
     xorm.save();
@@ -43,17 +15,17 @@ const save = async (req: Request, res: Response) => {
   }
 
   return res.status(201).json({
-    success: success,
     xorm:  xorm
   })
 }
 
 const getAll = async (req: Request, res: Response) => {
   let allForms = [];
+  const { xormId } = req.params;
 
   try {
     // allForms = await Form.find({ author: req.user._id, xorm: req.params.xormId });
-    allForms = await Form.find({ xorm: req.params.xormId });
+    allForms = await Form.find({ xorm: xormId });
   } catch(e) {
     throw new Error("Error when fetching forms....");
   }
