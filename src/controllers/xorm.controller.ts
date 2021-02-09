@@ -93,7 +93,7 @@ const download = async function(req: Request, res: Response) {
   });
 }
 
-export default {
+export {
   getOne,
   getAll,
   save,

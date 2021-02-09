@@ -70,6 +70,30 @@ const update = function(req: Request, res: Response) {
 
 }
 
+const remove = function(req: Request, res: Response) {
+  const { xormId, formId } = req.params;
+  
+  try {
+    Form.remove({ _id: formId });
+    // Also remove formId into xormId documents
+  } catch (e) {
+    throw new Error(`Error when update form: ${formId}`);
+  }
+
+  return res.status(201).json({
+    success: true
+  });
+
+}
+
+export {
+  save,
+  getAll,
+  getOne,
+  update,
+  remove
+};
+
 // const fetchAllCollaborators = async (req: Request, res: Response) => {
 //   const { formId }= req.params;
 
@@ -200,26 +224,3 @@ const update = function(req: Request, res: Response) {
 //   })
 // }
 
-exports.download = async (req, res) => {
-  var formId = req.params.formId;
-  var formOne = {};
-  var success = true;
-
-  debug("\nDownload XORMS");
-
-  try {
-    formOne = await Form.findById(formId);
-    console.log(formOne);
-  } catch (e) {
-    debug("Error when fetch one form - " + formId);
-    debug(e);
-
-    formOne = {}
-    success = false;
-  }
-
-  return res.json({
-    success: success,
-    data: formOne
-  });
-}
