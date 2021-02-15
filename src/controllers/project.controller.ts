@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
 import { Project, ProjectDocument } from '../models/project.model';
+import { Xorm, XormDocument } from '../models/xorm.model';
 
 
 const getAll = async (req: Request, res: Response) => {
-  
-  var allProjects = [];
+  let allProjects: ProjectDocument[] = [];
 
   try {
     allProjects = await Project.find({ author: 'xxxx' });
@@ -18,11 +18,10 @@ const getAll = async (req: Request, res: Response) => {
 }
 
 const save = async (req: Request, res: Response) => {
-
-  let body = req.body;
+  let { body } = req;
 
   let project = Project.build(body);
-  project.author = 'xxxx'; // req.user._id;
+  project.author = 'xxxx';
   
   try {
     project.save();
@@ -31,17 +30,16 @@ const save = async (req: Request, res: Response) => {
   }
 
   return res.status(201).json({
-    project:  project
+    data: project.toJSON()
   })
 }
 
 const getOne = async function(req: Request, res: Response) {
-  const projectId = req.params.projectId;
+  const { projectId } = req.params;
   let projectOne: ProjectDocument;
 
   try {
     projectOne = await Project.findById(projectId).populate('xorms') as ProjectDocument;
-    console.log(projectOne);
   } catch (e) {
     throw new Error(`Error when fetching one project ${projectId}`);
   }
@@ -49,6 +47,36 @@ const getOne = async function(req: Request, res: Response) {
   return res.status(201).json({
     data: projectOne
   });
+}
+
+const update = async function (req: Request, res: Response) {
+  const { body, params } = req;
+  const { projectId } = params;
+
+  try {
+    await Xorm.findByIdAndUpdate(projectId, body);
+  } catch (e) {
+    throw new Error(`Error occured when updating project ${projectId}`);
+  }
+
+  return res.status(201).json();
+}
+
+const remove = async function (req: Request, res: Response) {
+  const { projectId } = req.params;
+
+  try {
+    const projectOne = await Project.findById(projectId);
+    if (!projectOne) {
+      throw new Error(`Sorry but the project ${projectId} does not exists`);
+    }
+
+    await Xorm.remove({_id: { "$in": projectOne.xorms }});
+  } catch {
+    throw new Error(`Error occured when deleting project ${projectId}`);
+  }
+
+  return res.status(201).json();
 }
 
 const download = async function(req: Request, res: Response) {
@@ -72,23 +100,24 @@ const download = async function(req: Request, res: Response) {
     id: projectOne.id,
     name: projectOne.title,
     description: projectOne.description,
-    projects: [],
-    projectsDetails: {}
+    xorms: [],
+    xormsDetails: {}
   };
 
-  for (const xorm of projectOne.xorms) {
-    projectGenerated.projects.push({
+  for (let _i = 0; _i < projectOne.xorms.length; _i++) {
+    const xorm = projectOne.xorms[_i] as XormDocument;
+
+    projectGenerated.xorms.push({
       id: xorm.id,
       title: xorm.title
     });
 
-    projectGenerated.projectsDetails[xorm.id] = {
-      ...xorm.xorm // as JSON
+    projectGenerated.xormsDetails[xorm.id] = {
+      ...xorm.xorm
     }
   }
 
   return res.status(201).json({
-    success: true,
     data: projectGenerated
   });
 }
@@ -97,6 +126,8 @@ export {
   getOne,
   getAll,
   save,
+  update,
+  remove,
   download
 }
 
@@ -104,9 +135,9 @@ interface ProjectGenerated {
   id: string;
   name: string;
   description: string;
-  projects: {
+  xorms: {
     id: string;
     title: string;
   }[],
-  projectsDetails: {[key: string]: any } // JSON }
+  xormsDetails: {[key: string]: any } // JSON }
 }
