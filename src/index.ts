@@ -3,8 +3,8 @@ import 'express-async-errors';
 import mongoose from 'mongoose';
 import morgan from 'morgan';
 
-import { formRouter } from './routes/form.routes';
 import { xormRouter } from './routes/xorm.routes';
+import { projectRouter } from './routes/project.routes';
 import { apiRouter } from './routes/api.routes';
 
 const PORT = process.env.PORT || 3000;
@@ -19,8 +19,8 @@ app.use(express.json());
 app.use(morgan('combined'));
 
 app.use(apiRouter);
-app.use(formRouter);
 app.use(xormRouter);
+app.use(projectRouter);
 
 app.all('*', async () => {
   throw new Error('Route Not Found');

@@ -1,5 +1,4 @@
 import mongoose from 'mongoose';
-import { FormDocument } from './form.model';
 
 interface XormAttributes {
   title: string;
@@ -13,22 +12,21 @@ interface XormModel extends mongoose.Model<XormDocument> {
 interface XormDocument extends mongoose.Document {
   title: string;
   description: string;
-  forms: FormDocument[];
+  project: string;
   author: string;
+  createdAt: Date;
+  xorm: mongoose.Schema.Types.Mixed,
 }
 
 const XormSchema = new mongoose.Schema({
   title: {
     type: String,
-    default: "Untitled Xorm"
+    default: "Untitled xorm"
   },
   description: {
     type: String
   },
-  forms: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Form"
-  }],
+  xorm: mongoose.Schema.Types.Mixed,
   settings: {
     display_data: {
       web: {
@@ -41,19 +39,9 @@ const XormSchema = new mongoose.Schema({
       }
     }
   },
-  data: mongoose.Schema.Types.ObjectId,
-
-  collaborators: [{
-    name: String,
-    email: String,
-    username: String,
-    password: String,
-    phone: String,
-    role: String,
-    salt: String
-  }],
-
+  data: [mongoose.Schema.Types.ObjectId],
   author: mongoose.Schema.Types.ObjectId,
+  project: mongoose.Schema.Types.ObjectId,
   createdAt: {
     type: Date,
     default: Date.now

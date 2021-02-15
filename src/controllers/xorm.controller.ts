@@ -1,15 +1,33 @@
 import { Request, Response } from 'express';
 import { Xorm, XormDocument } from '../models/xorm.model';
 
+const save = async (req: Request, res: Response) => {
+  let body = req.body;
+  const { projectId } = req.params;
+
+  let project = new Xorm(body);
+  project.project = projectId;
+  
+  try {
+    project.save();
+  } catch (e) {
+    throw new Error("Error when saving XORM");
+  }
+
+  return res.status(201).json({
+    project:  project
+  })
+}
 
 const getAll = async (req: Request, res: Response) => {
-  
-  var allXorms = [];
+  let allXorms = [];
+  const { projectId } = req.params;
 
   try {
-    allXorms = await Xorm.find({ author: 'xxxx' });
+    // allXorms = await Xorm.find({ author: req.user._id, project: req.params.projectId });
+    allXorms = await Xorm.find({ project: projectId });
   } catch(e) {
-    throw new Error("Error when fetching xorms.");
+    throw new Error("Error when fetching xorms....");
   }
 
   return res.status(201).json({
@@ -17,33 +35,14 @@ const getAll = async (req: Request, res: Response) => {
   });
 }
 
-const save = async (req: Request, res: Response) => {
-
-  let body = req.body;
-
-  let xorm = Xorm.build(body);
-  xorm.author = 'xxxx'; // req.user._id;
-  
-  try {
-    xorm.save();
-  } catch (e) {
-    throw new Error("Error when saving XORM");
-  }
-
-  return res.status(201).json({
-    xorm:  xorm
-  })
-}
-
 const getOne = async function(req: Request, res: Response) {
-  const xormId = req.params.xormId;
-  let xormOne: XormDocument;
+  const { xormId } = req.params;
+  let xormOne: XormDocument | null;
 
   try {
-    xormOne = await Xorm.findById(xormId).populate('forms') as XormDocument;
-    console.log(xormOne);
+    xormOne = await Xorm.findById(xormId);
   } catch (e) {
-    throw new Error(`Error when fetching one xorm ${xormId}`);
+    throw new Error("Error when fetch one xorm - " + xormId);
   }
 
   return res.status(201).json({
@@ -51,62 +50,177 @@ const getOne = async function(req: Request, res: Response) {
   });
 }
 
-const download = async function(req: Request, res: Response) {
-  const xormId = req.params.xormId;
-  let xormGenerated: XormGenerated;
-  let xormOne
-
+const update = function(req: Request, res: Response) {
+  const { xormId } = req.params;
+  const { body } = req; // JSON.parse(JSON.stringify(req.body));
+  
+  const set = {
+    [req.body.toUpdate]: req.body.values
+  }
+  
   try {
-    xormOne = await Xorm.findById(xormId).populate('forms');
+    Xorm.findOneAndUpdate({ _id: xormId }, { "$set": set });
   } catch (e) {
-    throw new Error('Error when finding xorm to generated');
-  }
-
-  if (!xormOne) {
-    return res.status(201).json({
-      data: undefined
-    });
-  }
-
-  xormGenerated = {
-    id: xormOne.id,
-    name: xormOne.title,
-    description: xormOne.description,
-    xorms: [],
-    xormsDetails: {}
-  };
-
-  for (const form of xormOne.forms) {
-    xormGenerated.xorms.push({
-      id: form.id,
-      title: form.title
-    });
-
-    xormGenerated.xormsDetails[form.id] = {
-      ...form.form // as JSON
-    }
+    throw new Error(`Error when update xorm: ${xormId}`);
   }
 
   return res.status(201).json({
-    success: true,
-    data: xormGenerated
+    success: true
   });
+
+}
+
+const remove = function(req: Request, res: Response) {
+  const { projectId, xormId } = req.params;
+  
+  try {
+    Xorm.remove({ _id: xormId });
+    // Also remove xormId into projectId documents
+  } catch (e) {
+    throw new Error(`Error when update xorm: ${xormId}`);
+  }
+
+  return res.status(201).json({
+    success: true
+  });
+
 }
 
 export {
-  getOne,
-  getAll,
   save,
-  download
-}
+  getAll,
+  getOne,
+  update,
+  remove
+};
 
-interface XormGenerated {
-  id: string;
-  name: string;
-  description: string;
-  xorms: {
-    id: string;
-    title: string;
-  }[],
-  xormsDetails: {[key: string]: any } // JSON }
-}
+// const fetchAllCollaborators = async (req: Request, res: Response) => {
+//   const { xormId }= req.params;
+
+//   var xormOne = {};
+//   var success = true;
+//   var collaborators = undefined;
+
+//   try {
+//     xormOne = await Xorm.findById(xormId);
+//     collaborators = xormOne.collaborators;
+//   } catch (e) {
+//     debug("Error when fetch one xorm - " + xormId);
+//     debug(e);
+
+//     xormOne = {}
+//     success = false;
+//   }
+
+//   return res.json({
+//     success: success,
+//     data: collaborators
+//   });
+// }
+
+// exports.addCollaborator = async (req, res) => {
+//   debug("addCollaborator");
+//   var xormId = req.params.xormId;
+//   var collaborator = req.body;
+
+//   // collaborator.password = this.hashPassword(collaborator.password);
+//   // if (collaborator.salt && collaborator.password) {
+//     //   collaborator.password = crypto.pbkdf2Sync(collaborator.password, new Buffer(collaborator.salt, 'base64'), 10000, 64, 'sha1').toString('base64');
+//     // } else {
+//       //   collaborator.password = collaborator.password;
+//       // }
+
+//   Xorm.findById(xormId).then(xorm => {
+//     collaborator.salt = crypto.randomBytes(16).toString('base64');
+//     collaborator.password = hashPassword(collaborator.salt, collaborator.password);
+//     xorm.collaborators.push(collaborator);
+
+//     return xorm.save()
+//   }).then(xorm => {
+
+//     return res.json({
+//       success: true,
+//       data: xorm.collaborators[xorm.collaborators.length - 1]
+//     });
+//   }).catch(err => {
+//     debug(err);
+
+//     return res.json({
+//       success: false,
+//       err: err
+//     });
+//   });
+// }
+
+// exports.removeCollaborator = async (req, res) => {
+//   debug("addCollaborator");
+//   var xormId = req.params.xormId;
+//   var collaboratorId = req.params.collaboratorId;
+
+//   Xorm.findById(xormId).then(xorm => {
+//     xorm.collaborators.id(collaboratorId).remove(); // push(collaborator);
+
+//     return xorm.save();
+//   }).then(xorm => {
+
+//     return res.json({
+//       success: true,
+//       // data: xorm.collaborators[xorm.collaborators.length - 1]
+//     });
+//   }).catch(err => {
+//     debug(err);
+
+//     return res.json({
+//       success: false,
+//       err: err
+//     });
+//   });
+// }
+
+// exports.collaboratorAuth = async (req, res) => {
+//   debug("collaboratorAuth");
+//   var xormId = req.params.xormId;
+//   var credentials = req.body;
+//   var collaborator;
+
+//   debug(credentials);
+//   // if (credentials.p)
+//   Xorm.findById(xormId).then(xorm => {
+//     collaborator = xorm.collaborators.find(collaborator => collaborator.email == credentials.username || collaborator.username == credentials.username); // push(collaborator);
+
+//     if (!collaborator) {
+//       return res.status(423).json({
+//         success: false,
+//         err: "No collaborator"
+//       });
+//     }
+
+//     if (collaborator.password == hashPassword(collaborator.salt, credentials.password)) {
+//       collaborator["password"] = undefined;
+//       collaborator["salt"] = undefined;
+//       var data = collaborator.toObject();
+//       data.xorm = xormId;
+
+//       token.createToken(data, function(err, token) {
+//         if (err) {
+//           return res.status(400).json({
+//             success: false,
+//             err:err
+//           });
+//         }
+
+//         res.status(201).json({
+//           success: true,
+//           data: data,
+//           access_token: token
+//         });
+//       });
+//     } else {
+//       return res.status(403).json({
+//         success: false,
+//         err: "username or password is not good"
+//       });
+//     }
+//   })
+// }
+
