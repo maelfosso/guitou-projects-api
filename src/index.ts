@@ -27,7 +27,7 @@ app.all('*', async () => {
 });
 
 const start = async () => {
-  
+  mongoose.set('toJSON', { virtuals: true });
   mongoose.connect(MONGODB_URL, {
     useNewUrlParser: true,
     useUnifiedTopology: true,

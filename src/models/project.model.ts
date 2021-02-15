@@ -13,7 +13,7 @@ interface ProjectModel extends mongoose.Model<ProjectDocument> {
 interface ProjectDocument extends mongoose.Document {
   title: string;
   description: string;
-  xorms: XormDocument[];
+  xorms: XormDocument[] | string[];
   settings: {
     xorms: {
       primary: String,
