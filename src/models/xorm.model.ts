@@ -15,6 +15,8 @@ interface XormDocument extends mongoose.Document {
   project: string;
   author: string;
   createdAt: Date;
+  level: String,
+  pKeyOrigin: String,
   xorm: mongoose.Schema.Types.Mixed,
 }
 

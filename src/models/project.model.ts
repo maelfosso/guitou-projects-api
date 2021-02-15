@@ -14,6 +14,12 @@ interface ProjectDocument extends mongoose.Document {
   title: string;
   description: string;
   xorms: XormDocument[];
+  settings: {
+    xorms: {
+      primary: String,
+      pKeyOrigin: String
+    }
+  },
   author: string;
 }
 
@@ -36,7 +42,7 @@ const ProjectSchema = new mongoose.Schema({
     }]
   },
   settings: {
-    forms: {
+    xorms: {
       primary: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Xorm"
