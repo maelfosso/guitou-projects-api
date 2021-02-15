@@ -39,9 +39,12 @@ const XormSchema = new mongoose.Schema({
       }
     }
   },
+  project: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Project"
+  },
   data: [mongoose.Schema.Types.ObjectId],
   author: mongoose.Schema.Types.ObjectId,
-  project: mongoose.Schema.Types.ObjectId,
   createdAt: {
     type: Date,
     default: Date.now
