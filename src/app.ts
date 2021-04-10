@@ -10,10 +10,10 @@ import { apiRouter } from './routes/api.routes';
 import { errorHandler } from './middlewares/error-handler';
 
 const PORT = process.env.PORT || 3000;
-const MONGODB_URL = process.env.MONGODB_URL;
+const MONGODB_URI = process.env.MONGODB_URI;
 
-if (!MONGODB_URL) {
-  throw new Error('MONGODB_URL must be defined!');
+if (!MONGODB_URI) {
+  throw new Error('MONGODB_URI must be defined!');
 }
 
 const app = express();
