@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "license": "MIT",
+  "scripts": {
+    "start": "ts-node-dev src/index.ts"
+  },
   "dependencies": {
     "@types/amqplib": "^0.5.17",
     "@types/cookie-session": "^2.0.42",

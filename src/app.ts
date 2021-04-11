@@ -8,6 +8,7 @@ import { projectRouter } from './routes/project.routes';
 import { apiRouter } from './routes/api.routes';
 
 import { errorHandler } from './middlewares/error-handler';
+import { NotFoundError } from './errors/not-found-error';
 
 const PORT = process.env.PORT || 3000;
 const MONGODB_URI = process.env.MONGODB_URI;
@@ -25,7 +26,7 @@ app.use(xormRouter);
 app.use(projectRouter);
 
 app.all('*', async () => {
-  throw new Error('Route Not Found');
+  throw new NotFoundError();
 });
 
 // Handle errors

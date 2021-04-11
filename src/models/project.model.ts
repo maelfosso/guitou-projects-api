@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose, { FilterQuery, Types } from 'mongoose';
 import { XormDocument } from './xorm.model';
 
 interface ProjectAttributes {
@@ -7,20 +7,9 @@ interface ProjectAttributes {
 }
 
 interface ProjectModel extends mongoose.Model<ProjectDocument> {
-  build(attrs: ProjectAttributes): ProjectDocument
-}
-
-interface ProjectDocument extends mongoose.Document {
-  title: string;
-  description: string;
-  xorms: XormDocument[] | string[];
-  settings: {
-    xorms: {
-      primary: String,
-      pKeyOrigin: String
-    }
-  },
-  author: string;
+  build(attrs: ProjectAttributes): ProjectDocument;
+  findByIdWithXorms(id: string): Promise<ProjectPopulatedDocument>;
+  findOneWithXorms(filter?: FilterQuery<ProjectDocument>): Promise<ProjectPopulatedDocument>;
 }
 
 const ProjectSchema = new mongoose.Schema({
@@ -74,6 +63,36 @@ const ProjectSchema = new mongoose.Schema({
   }
 }, { strict: false });
 
+
+interface ProjectDocument extends mongoose.Document {
+  title: string;
+  description: string;
+  xorms: Types.ObjectId[] | Record<string, unknown>[] | XormDocument[];
+  settings: {
+    xorms: {
+      primary: string,
+      pKeyOrigin: string
+    }
+  },
+  author: string;
+}
+
+interface ProjectPopulatedDocument extends ProjectDocument {
+  xorms: XormDocument[]
+}
+
+ProjectSchema.statics.findByIdWithXorms = async function(
+  id: string
+) {
+  return Project.findById(id).populate('xorms').exec();
+}
+
+ProjectSchema.statics.findOneWithXorms = async function(
+  filter: FilterQuery<ProjectDocument>
+) {
+  return Project.findOne(filter).populate('xorms').exec();
+}
+
 const Project = mongoose.model<ProjectDocument, ProjectModel>('Project', ProjectSchema);
 
-export { Project, ProjectDocument, ProjectSchema };
+export { Project, ProjectDocument, ProjectPopulatedDocument, ProjectSchema };

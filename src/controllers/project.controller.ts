@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
+import { BadRequestError } from '../errors/bad-request-error';
 import { Project, ProjectDocument } from '../models/project.model';
 import { Xorm, XormDocument } from '../models/xorm.model';
-
 
 const getAll = async (req: Request, res: Response) => {
   let allProjects: ProjectDocument[] = [];
@@ -12,9 +12,7 @@ const getAll = async (req: Request, res: Response) => {
     throw new Error("Error when fetching projects.");
   }
 
-  return res.status(201).json({
-    data: allProjects
-  });
+  return res.status(200).json(allProjects);
 }
 
 const save = async (req: Request, res: Response) => {
@@ -24,7 +22,7 @@ const save = async (req: Request, res: Response) => {
   project.author = 'xxxx';
   
   try {
-    project.save();
+    await project.save();
   } catch (e) {
     throw new Error("Error when saving XORM");
   }
@@ -41,12 +39,10 @@ const getOne = async function(req: Request, res: Response) {
   try {
     projectOne = await Project.findById(projectId).populate('xorms') as ProjectDocument;
   } catch (e) {
-    throw new Error(`Error when fetching one project ${projectId}`);
+    throw new BadRequestError(`Error when fetching one project ${projectId}`); 
   }
 
-  return res.status(201).json({
-    data: projectOne
-  });
+  return res.status(200).json(projectOne);
 }
 
 const update = async function (req: Request, res: Response) {
@@ -56,24 +52,24 @@ const update = async function (req: Request, res: Response) {
   try {
     await Xorm.findByIdAndUpdate(projectId, body);
   } catch (e) {
-    throw new Error(`Error occured when updating project ${projectId}`);
+    throw new BadRequestError(`Error occured when updating project ${projectId}`);
   }
 
-  return res.status(201).json();
+  return res.status(200).json(true);
 }
 
 const remove = async function (req: Request, res: Response) {
   const { projectId } = req.params;
 
-  try {
-    const projectOne = await Project.findById(projectId);
-    if (!projectOne) {
-      throw new Error(`Sorry but the project ${projectId} does not exists`);
-    }
+  const projectOne = await Project.findById(projectId);
+  if (!projectOne) {
+    throw new BadRequestError(`Sorry but the project ${projectId} does not exists`);
+  }
 
+  try {
     await Xorm.remove({_id: { "$in": projectOne.xorms }});
   } catch {
-    throw new Error(`Error occured when deleting project ${projectId}`);
+    throw new BadRequestError(`Error occured when deleting project ${projectId}`);
   }
 
   return res.status(201).json();

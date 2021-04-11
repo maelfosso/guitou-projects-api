@@ -1,4 +1,7 @@
 import { Request, Response } from 'express';
+import { Types } from 'mongoose';
+import { Type } from 'typescript';
+import { BadRequestError } from '../errors/bad-request-error';
 import { Project } from '../models/project.model';
 import { Xorm, XormDocument } from '../models/xorm.model';
 
@@ -9,13 +12,12 @@ const save = async (req: Request, res: Response) => {
   let xorm = new Xorm(body);
   xorm.project = projectId;
   
-  try {
-    
-    const projectOne = await Project.findById(projectId);
-    if (!projectOne) {
-      throw new Error('The project referenced does not exists!');
-    }
+  const projectOne = await Project.findById(projectId);
+  if (!projectOne) {
+    throw new BadRequestError('The project referenced does not exists!');
+  }
 
+  try {
     await xorm.save();
 
     projectOne.xorms = [...projectOne.xorms, xorm.id];
@@ -24,37 +26,29 @@ const save = async (req: Request, res: Response) => {
     }
     await projectOne.save();
   } catch (e) {
-    throw new Error("Error when saving XORM");
+    throw new BadRequestError("Error when saving XORM");
   }
 
-  return res.status(201).json({
-    data: xorm
-  })
+  return res.status(200).json(xorm);
 }
 
 const getAll = async (req: Request, res: Response) => {
   const { projectId } = req.params;
   let allXorms = [];
 
-  try {
-    const projectOne = await Project.findById(projectId).populate('xorms');
-    if (!projectOne) {
-      throw new Error('The project referenced does not exists!');
-    }
-
-    allXorms = projectOne.xorms.map((x:XormDocument) => {
-      return {
-        ...x.toJSON(),
-        level: projectOne.settings.xorms.primary == x.id ? 'primary' : 'secondary'
-      }
-    });
-  } catch(e) {
-    throw new Error("Error when fetching xorms....");
+  const project = await Project.findByIdWithXorms(projectId); //.populate('xorms');
+  if (!project) {
+    throw new BadRequestError('The project referenced does not exists!');
   }
 
-  return res.status(201).json({
-    data: allXorms
+  allXorms = project.xorms.map((x:XormDocument) => {
+    return {
+      ...x.toJSON(),
+      level: project.settings.xorms.primary == x.id ? 'primary' : 'secondary'
+    }
   });
+
+  return res.status(201).json(allXorms);
 }
 
 const getOne = async function(req: Request, res: Response) {
@@ -62,37 +56,31 @@ const getOne = async function(req: Request, res: Response) {
   let xormOne: XormDocument | undefined;
   let data;
 
-  try {
-    const projectOne = await Project.findOne(
-      {
-        $and: [
-          { _id: projectId },
-          { xorms: xormId }
-        ]
-      }
-    ).populate('xorms');
-    if (!projectOne) {
-      throw new Error('The project referenced does not exists!');
+  const projectOne = await Project.findOneWithXorms(
+    {
+      $and: [
+        { _id: projectId },
+        { xorms: Types.ObjectId(xormId) }
+      ]
     }
-
-    xormOne = projectOne.xorms.find((x: XormDocument) => x.id == xormId);
-    if (!xormOne) {
-      throw new Error('A xorm from this project referenced does not exists!');
-    }    
-    
-    const { primary, pKeyOrigin } = projectOne.settings.xorms;
-    data = {
-      ...xormOne.toJSON(),
-      level: primary == xormId ? 'primary' : 'secondary',
-      pKeyOrigin    
-    }
-  } catch (e) {
-    throw new Error("Error when fetch one xorm - " + xormId);
+  );
+  if (!projectOne) {
+    throw new BadRequestError('The project referenced does not exists!');
   }
 
-  return res.status(201).json({
-    data
-  });
+  xormOne = projectOne.xorms.find((x: XormDocument) => x.id == xormId);
+  if (!xormOne) {
+    throw new BadRequestError('A xorm from this project referenced does not exists!');
+  }    
+  
+  const { primary, pKeyOrigin } = projectOne.settings.xorms;
+  data = {
+    ...xormOne.toJSON(),
+    level: primary == xormId ? 'primary' : 'secondary',
+    pKeyOrigin    
+  }
+
+  return res.status(200).json(data);
 }
 
 const update = async function(req: Request, res: Response) {
@@ -117,7 +105,7 @@ const remove = async function(req: Request, res: Response) {
   
   try {
     await Project.findByIdAndUpdate(projectId, {
-      $pull: { xorms: xormId },
+      $pull: { xorms: Types.ObjectId(xormId) },
     });
     await Xorm.remove({ _id: xormId });
   } catch (e) {
